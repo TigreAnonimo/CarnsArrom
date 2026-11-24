@@ -37,7 +37,7 @@ create table if not exists public.inventario (
   created_at timestamptz not null default now()
 );
 
-create sequence if not exists public.encargos_numero_seq start with 100 increment by 1;
+create sequence if not exists public.encargos_numero_seq start with 1 increment by 1;
 
 create table if not exists public.encargos (
   id uuid primary key default gen_random_uuid(),
