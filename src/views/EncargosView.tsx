@@ -520,7 +520,7 @@ export function EncargosView() {
                 htmlFor="enc-numero"
                 className="mb-1.5 block text-base font-bold text-slate-800"
               >
-                Número de encargo
+                Nombre y Número de encargo
               </label>
 
               <input
