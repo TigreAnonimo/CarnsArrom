@@ -6,10 +6,17 @@ export function getOrderBadgeStyle(estado: EncargoEstado): string {
   return "bg-emerald-100 text-emerald-900 border-emerald-300";
 }
 
-export function nextOrderNumber(existing: string[]): string {
-  const max = existing.reduce((acc, numero) => {
-    const n = parseInt(numero.replace(/\D/g, ""), 10);
-    return Number.isFinite(n) ? Math.max(acc, n) : acc;
-  }, 107);
-  return `#${max + 1}`;
+export function formatEncargoNumero(n: number): string {
+  return `#${n}`;
+}
+
+export function fridgeBadge(temps: number[], alertLimit: number): { text: string; ok: boolean; alerts: number } {
+  const alerts = temps.filter((t) => Number(t) > alertLimit).length;
+  const ok = 7 - alerts;
+  if (alerts === 0) return { text: "7/7 OK", ok: true, alerts: 0 };
+  return {
+    text: `${ok}/7 OK — ${alerts} alerta${alerts === 1 ? "" : "s"}`,
+    ok: false,
+    alerts,
+  };
 }

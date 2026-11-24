@@ -1,22 +1,23 @@
 import { TEMP_ALERT } from "../data/constants";
-import { formatDateES, todayISO } from "../lib/dates";
+import { todayISO } from "../lib/dates";
+import { fridgeBadge } from "../lib/orders";
 import { useAppStore } from "../store/AppStore";
 
 export function HomeView() {
-  const { data, navigateTo } = useAppStore();
-  const stockCount = data.inventario.filter((i) => i.estado === "En almacén").length;
+  const { data, navigateTo, loading, syncError } = useAppStore();
+  const stockCount = data.productos.filter((i) => i.estado === "En almacén").length;
   const activeOrders = data.encargos.filter((o) => o.estado !== "Entregado").length;
-  const todayFecha = formatDateES(todayISO());
-  const todayFridge = data.neverasPorDia.find((d) => d.fecha === todayFecha);
-  const fridgeAlerts = todayFridge?.temps.filter((t) => t > TEMP_ALERT).length ?? 0;
-  const fridgeBadge = todayFridge
-    ? fridgeAlerts === 0
-      ? "Hoy OK (7/7)"
-      : `Hoy: ${fridgeAlerts} alerta${fridgeAlerts === 1 ? "" : "s"}`
-    : "Pendiente hoy";
+  const todayFridge = data.neverasPorDia.find((d) => d.fechaISO === todayISO());
+  const fridge = todayFridge ? fridgeBadge(todayFridge.temps, TEMP_ALERT) : null;
 
   return (
     <section className="fade-in space-y-6">
+      {syncError ? (
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-800">
+          {syncError}
+        </div>
+      ) : null}
+      {loading ? <p className="text-sm font-semibold text-slate-500">Sincronizando datos…</p> : null}
       <div className="pt-1">
         <h2 className="text-2xl font-extrabold text-slate-900">Panel principal</h2>
         <p className="mt-0.5 text-base text-slate-600">Selecciona qué quieres gestionar hoy</p>
@@ -34,7 +35,6 @@ export function HomeView() {
           subtitle="Conteo de cámara y productos agotados"
           arrowHover="group-hover:text-brand"
         />
-
         <HomeCard
           onClick={() => navigateTo("encargos")}
           hover="hover:bg-amber-50/50 hover:border-amber-600"
@@ -46,19 +46,21 @@ export function HomeView() {
           subtitle="Pedidos de clientes pendientes y preparados"
           arrowHover="group-hover:text-amber-700"
         />
-
         <HomeCard
           onClick={() => navigateTo("neveras")}
           hover="hover:bg-sky-50/50 hover:border-sky-700"
           iconWrap="bg-sky-50 text-sky-700 border-sky-200"
           icon="❄️"
           title="NEVERAS"
-          badge={fridgeBadge}
-          badgeClass="bg-sky-100 text-sky-900 border-sky-300"
+          badge={fridge ? fridge.text : "Pendiente hoy"}
+          badgeClass={
+            fridge && !fridge.ok
+              ? "bg-red-100 text-red-800 border-red-300"
+              : "bg-sky-100 text-sky-900 border-sky-300"
+          }
           subtitle="Temperatura diaria de las 7 neveras"
           arrowHover="group-hover:text-sky-700"
         />
-
         <button
           type="button"
           onClick={() => navigateTo("basedatos")}
@@ -70,7 +72,7 @@ export function HomeView() {
           <div className="min-w-0 flex-1">
             <span className="block text-lg font-extrabold tracking-tight text-white sm:text-xl">BASE DE DATOS</span>
             <span className="mt-0.5 block text-xs font-medium text-slate-300 sm:text-sm">
-              Ver registros completos (Neveras por mes, Inventario y Encargos)
+              Historial, actividad, exportaciones y copias de seguridad
             </span>
           </div>
           <Arrow className="text-slate-400 group-hover:text-white" />
@@ -83,20 +85,24 @@ export function HomeView() {
           <span className="text-xs font-semibold text-slate-500">Actividad reciente</span>
         </div>
         <div className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          {data.recentActivity.slice(0, 4).map((item) => (
-            <div key={item.id} className="flex items-center justify-between gap-3 p-3.5">
-              <div className="flex min-w-0 items-center gap-3">
-                <span className="shrink-0 text-xl">{item.icon}</span>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-bold text-slate-800">{item.text}</p>
-                  <p className="text-xs text-slate-500">{item.meta}</p>
+          {data.recentActivity.length === 0 ? (
+            <p className="p-4 text-sm text-slate-500">Aún no hay actividad.</p>
+          ) : (
+            data.recentActivity.slice(0, 4).map((item) => (
+              <div key={item.id} className="flex items-center justify-between gap-3 p-3.5">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="shrink-0 text-xl">{item.icon}</span>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-bold text-slate-800">{item.text}</p>
+                    <p className="text-xs text-slate-500">{item.meta}</p>
+                  </div>
                 </div>
+                <span className={`shrink-0 rounded-lg border px-2.5 py-1 text-xs font-extrabold ${item.badgeColor}`}>
+                  {item.badge}
+                </span>
               </div>
-              <span className={`shrink-0 rounded-lg border px-2.5 py-1 text-xs font-extrabold ${item.badgeColor}`}>
-                {item.badge}
-              </span>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
     </section>
@@ -130,9 +136,7 @@ function HomeCard({
       onClick={onClick}
       className={`group flex w-full items-center gap-4 rounded-2xl border-2 border-slate-200 bg-white p-5 text-left shadow-sm transition-all active:scale-[0.99] ${hover}`}
     >
-      <div
-        className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border text-3xl transition-transform group-hover:scale-105 ${iconWrap}`}
-      >
+      <div className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border text-3xl transition-transform group-hover:scale-105 ${iconWrap}`}>
         {icon}
       </div>
       <div className="min-w-0 flex-1">

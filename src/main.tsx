@@ -1,13 +1,16 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { registerSW } from "virtual:pwa-register";
 import App from "./App";
 import "./index.css";
-import { AppStoreProvider } from "./store/AppStore";
+import { AuthProvider } from "./store/AuthStore";
+
+registerSW({ immediate: true });
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <AppStoreProvider>
+    <AuthProvider>
       <App />
-    </AppStoreProvider>
+    </AuthProvider>
   </StrictMode>,
 );

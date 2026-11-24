@@ -87,3 +87,23 @@ export function monthLabel(ym: string): string {
 export function formatTempES(num: number): string {
   return Number(num).toFixed(1).replace(".", ",");
 }
+
+export function formatDateTimeES(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  const dd = String(date.getDate()).padStart(2, "0");
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const hh = String(date.getHours()).padStart(2, "0");
+  const min = String(date.getMinutes()).padStart(2, "0");
+  return `${dd}/${mm}/${date.getFullYear()} ${hh}:${min}`;
+}
+
+export function currentTimeHHMM(): string {
+  const now = new Date();
+  return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+}
+
+export function parseTime(value: string | null | undefined): string {
+  if (!value) return currentTimeHHMM();
+  return value.slice(0, 5);
+}

@@ -16,5 +16,6 @@ export const PRODUCT_CHIPS = [
   "Carne picada",
 ] as const;
 
-export const STORAGE_KEY = "carns-arrom-v1";
 export const TEMP_ALERT = 5.0;
+export const TEMP_MIN = -30;
+export const TEMP_MAX = 15;
