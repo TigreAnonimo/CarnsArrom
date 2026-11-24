@@ -18,8 +18,9 @@ import type { BackupPayload, DbEncFilter, DbTab } from "../types";
 export function BaseDatosView() {
   const { data, worker, exportBackup, restoreBackup, createWorker, setWorkerPin, setWorkerAdmin, showToast } =
     useAppStore();
+  if (!worker.esAdmin) return null;
   const { workers } = useAuth();
-  const [tab, setTab] = useState<DbTab>("neveras");
+  const [tab, setTab] = useState<DbTab>("equipo");
   const [month, setMonth] = useState("all");
   const [workerFilter, setWorkerFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -153,24 +154,22 @@ export function BaseDatosView() {
       <div className="grid grid-cols-2 gap-1.5 rounded-2xl bg-slate-200/80 p-1.5 sm:grid-cols-5">
         {(
           [
+            ["equipo", "👥 Equipo"],
             ["neveras", "❄️ Neveras"],
             ["inventario", "📦 Inventario"],
             ["encargos", "📝 Encargos"],
             ["actividad", "📋 Actividad"],
-            ["equipo", "👥 Equipo"],
           ] as const
-        ).map(([id, label]) =>
-          id === "equipo" && !worker.esAdmin ? null : (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setTab(id)}
-              className={`rounded-xl px-2 py-3 text-xs font-extrabold ${tab === id ? "bg-white shadow-sm" : "text-slate-600"}`}
-            >
-              {label}
-            </button>
-          ),
-        )}
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setTab(id)}
+            className={`rounded-xl px-2 py-3 text-xs font-extrabold ${tab === id ? "bg-white shadow-sm" : "text-slate-600"}`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       {tab !== "equipo" ? (
@@ -259,8 +258,11 @@ export function BaseDatosView() {
         </div>
       ) : null}
 
-      {tab === "equipo" && worker.esAdmin ? (
+      {tab === "equipo" ? (
         <div className="space-y-4">
+          <p className="text-sm text-slate-600">
+            Aquí decides quién es administrador. Solo los administradores ven la Base de datos.
+          </p>
           <form
             className="space-y-2 rounded-2xl border bg-white p-4"
             onSubmit={(e) => {
@@ -291,7 +293,20 @@ export function BaseDatosView() {
                 <p className="text-xs text-slate-500">{w.esAdmin ? "Administrador" : "Trabajador"}</p>
               </div>
               <div className="flex gap-2">
-                <button type="button" onClick={() => void setWorkerAdmin(w.id, !w.esAdmin)} className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-bold">
+                <button
+                  type="button"
+                  onClick={() => {
+                    void setWorkerAdmin(w.id, !w.esAdmin)
+                      .then(() =>
+                        showToast(
+                          w.esAdmin ? "Ya no es administrador" : "Ahora es administrador",
+                          w.nombre,
+                        ),
+                      )
+                      .catch((err: Error) => showToast("No se pudo cambiar", err.message, "bg-red-600"));
+                  }}
+                  className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-bold"
+                >
                   {w.esAdmin ? "Quitar admin" : "Hacer admin"}
                 </button>
                 <button

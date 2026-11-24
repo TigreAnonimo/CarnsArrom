@@ -4,7 +4,7 @@ import { fridgeBadge } from "../lib/orders";
 import { useAppStore } from "../store/AppStore";
 
 export function HomeView() {
-  const { data, navigateTo, loading, syncError } = useAppStore();
+  const { data, navigateTo, loading, syncError, worker } = useAppStore();
   const stockCount = data.productos.filter((i) => i.estado === "En almacén").length;
   const activeOrders = data.encargos.filter((o) => o.estado !== "Entregado").length;
   const todayFridge = data.neverasPorDia.find((d) => d.fechaISO === todayISO());
@@ -61,22 +61,24 @@ export function HomeView() {
           subtitle="Temperatura diaria de las 7 neveras"
           arrowHover="group-hover:text-sky-700"
         />
-        <button
-          type="button"
-          onClick={() => navigateTo("basedatos")}
-          className="group flex w-full items-center gap-4 rounded-2xl border-2 border-slate-800 bg-slate-900 p-4 text-left shadow-md transition-all hover:bg-slate-800 active:scale-[0.99] sm:p-5"
-        >
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-slate-700 bg-slate-800 text-2xl text-white">
-            📊
-          </div>
-          <div className="min-w-0 flex-1">
-            <span className="block text-lg font-extrabold tracking-tight text-white sm:text-xl">BASE DE DATOS</span>
-            <span className="mt-0.5 block text-xs font-medium text-slate-300 sm:text-sm">
-              Historial, actividad, exportaciones y copias de seguridad
-            </span>
-          </div>
-          <Arrow className="text-slate-400 group-hover:text-white" />
-        </button>
+        {worker.esAdmin ? (
+          <button
+            type="button"
+            onClick={() => navigateTo("basedatos")}
+            className="group flex w-full items-center gap-4 rounded-2xl border-2 border-slate-800 bg-slate-900 p-4 text-left shadow-md transition-all hover:bg-slate-800 active:scale-[0.99] sm:p-5"
+          >
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-slate-700 bg-slate-800 text-2xl text-white">
+              📊
+            </div>
+            <div className="min-w-0 flex-1">
+              <span className="block text-lg font-extrabold tracking-tight text-white sm:text-xl">BASE DE DATOS</span>
+              <span className="mt-0.5 block text-xs font-medium text-slate-300 sm:text-sm">
+                Historial, equipo, exportaciones y copias de seguridad
+              </span>
+            </div>
+            <Arrow className="text-slate-400 group-hover:text-white" />
+          </button>
+        ) : null}
       </div>
 
       <div className="pt-1">

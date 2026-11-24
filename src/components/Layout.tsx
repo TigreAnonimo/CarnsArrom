@@ -1,13 +1,15 @@
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { formatHeaderDate } from "../lib/dates";
 import { useAppStore } from "../store/AppStore";
 import { useAuth } from "../store/AuthStore";
+import { ChangePinModal } from "./ChangePinModal";
 import { ConfirmModal } from "./ConfirmModal";
 import { Toast } from "./Toast";
 
 export function Layout({ children }: { children: ReactNode }) {
   const { view, navigateTo, worker } = useAppStore();
   const { logout } = useAuth();
+  const [pinOpen, setPinOpen] = useState(false);
 
   return (
     <div className="flex min-h-screen w-full flex-col items-center justify-start bg-slate-100 text-slate-800 antialiased sm:p-3 lg:p-5">
@@ -45,6 +47,9 @@ export function Layout({ children }: { children: ReactNode }) {
                 {worker.nombre}
                 {worker.esAdmin ? " · Admin" : ""}
               </span>
+              <button type="button" onClick={() => setPinOpen(true)} className="rounded-lg bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-700">
+                PIN
+              </button>
               <button type="button" onClick={logout} className="rounded-lg bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-700">
                 Salir
               </button>
@@ -60,6 +65,7 @@ export function Layout({ children }: { children: ReactNode }) {
           </p>
         </footer>
       </div>
+      <ChangePinModal open={pinOpen} onClose={() => setPinOpen(false)} />
       <ConfirmModal />
     </div>
   );

@@ -19,6 +19,8 @@ interface AuthValue {
   workers: SessionWorker[];
   loginError: string;
   login: (nombre: string, pin: string) => Promise<boolean>;
+  changeOwnPin: (actual: string, nuevo: string) => Promise<string | null>;
+  patchSession: (patch: Partial<SessionWorker>) => void;
   logout: () => void;
   refreshWorkers: () => Promise<void>;
 }
@@ -78,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
       const row = Array.isArray(data) ? data[0] : data;
       if (!row) {
-        setLoginError("PIN incorrecto o trabajador no válido.");
+        setLoginError("PIN incorrecto.");
         return false;
       }
       const next: SessionWorker = {
@@ -89,10 +91,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sessionStorage.setItem(SESSION_KEY, JSON.stringify(next));
       setSession(next);
       return true;
-    } catch {
-      setLoginError("No se ha podido entrar. Revisa la conexión y el PIN.");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "";
+      setLoginError(
+        message.includes("crypt")
+          ? "Falta ejecutar supabase/fix-login.sql en el SQL Editor."
+          : "No se ha podido entrar. Revisa la conexión y el PIN.",
+      );
       return false;
     }
+  }, []);
+
+  const changeOwnPin = useCallback(async (actual: string, nuevo: string) => {
+    if (!session) return "No hay sesión.";
+    if (nuevo.length < 4) return "El PIN nuevo debe tener al menos 4 números.";
+    const client = requireSupabase();
+    const { data, error } = await client.rpc("login_trabajador", {
+      p_nombre: session.nombre,
+      p_pin: actual,
+    });
+    if (error) return "No se ha podido comprobar el PIN actual.";
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) return "El PIN actual no es correcto.";
+    const { error: pinError } = await client.rpc("set_trabajador_pin", {
+      p_id: session.id,
+      p_pin: nuevo,
+    });
+    if (pinError) return "No se ha podido guardar el PIN nuevo.";
+    return null;
+  }, [session]);
+
+  const patchSession = useCallback((patch: Partial<SessionWorker>) => {
+    setSession((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, ...patch };
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(next));
+      return next;
+    });
   }, []);
 
   const logout = useCallback(() => {
@@ -108,10 +143,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       workers,
       loginError,
       login,
+      changeOwnPin,
+      patchSession,
       logout,
       refreshWorkers,
     }),
-    [loading, session, workers, loginError, login, logout, refreshWorkers],
+    [loading, session, workers, loginError, login, changeOwnPin, patchSession, logout, refreshWorkers],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

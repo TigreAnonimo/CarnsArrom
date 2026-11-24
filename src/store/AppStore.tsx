@@ -155,7 +155,7 @@ function mapNevera(row: Record<string, unknown>): NeveraDia {
 }
 
 export function AppStoreProvider({ children }: { children: ReactNode }) {
-  const { session, refreshWorkers } = useAuth();
+  const { session, refreshWorkers, patchSession, workers } = useAuth();
   const worker = session!;
   const [data, setData] = useState<AppData>(emptyData);
   const [view, setView] = useState<ViewName>("home");
@@ -242,9 +242,10 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   }, [reload]);
 
   const navigateTo = useCallback((next: ViewName) => {
+    if (next === "basedatos" && !worker.esAdmin) return;
     setView(next);
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, []);
+  }, [worker.esAdmin]);
 
   const saveInventario = useCallback(
     async (item: { fechaISO: string; producto: string; cantidad: string; obs: string }) => {
@@ -643,12 +644,23 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
 
   const setWorkerAdmin = useCallback(
     async (id: string, esAdmin: boolean) => {
+      if (!esAdmin) {
+        const adminCount = workers.filter((w) => w.esAdmin).length;
+        const target = workers.find((w) => w.id === id);
+        if (target?.esAdmin && adminCount <= 1) {
+          throw new Error("Tiene que quedar al menos un administrador.");
+        }
+      }
       const client = requireSupabase();
       const { error } = await client.from("trabajadores").update({ es_admin: esAdmin }).eq("id", id);
       if (error) throw error;
       await refreshWorkers();
+      if (id === worker.id) {
+        patchSession({ esAdmin });
+        if (!esAdmin) setView("home");
+      }
     },
-    [refreshWorkers],
+    [patchSession, refreshWorkers, worker.id, workers],
   );
 
   const value = useMemo<AppStoreValue>(

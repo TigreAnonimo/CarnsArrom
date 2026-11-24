@@ -126,7 +126,7 @@ create or replace function public.login_trabajador(p_nombre text, p_pin text)
 returns table (id uuid, nombre text, es_admin boolean)
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 begin
   return query
@@ -145,7 +145,7 @@ create or replace function public.set_trabajador_pin(p_id uuid, p_pin text)
 returns void
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 begin
   update public.trabajadores

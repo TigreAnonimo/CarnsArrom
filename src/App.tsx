@@ -11,14 +11,15 @@ import { NeverasView } from "./views/NeverasView";
 import { SetupView } from "./views/SetupView";
 
 function Shell() {
-  const { view } = useAppStore();
+  const { view, worker } = useAppStore();
+  const showDb = view === "basedatos" && worker.esAdmin;
   return (
     <Layout>
-      {view === "home" && <HomeView />}
+      {(view === "home" || (view === "basedatos" && !worker.esAdmin)) && <HomeView />}
       {view === "inventario" && <InventarioView />}
       {view === "encargos" && <EncargosView />}
       {view === "neveras" && <NeverasView />}
-      {view === "basedatos" && <BaseDatosView />}
+      {showDb && <BaseDatosView />}
     </Layout>
   );
 }
