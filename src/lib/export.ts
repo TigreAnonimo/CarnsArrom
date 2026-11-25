@@ -1,6 +1,7 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
+import { NEVERA_NOMBRES } from "../data/constants";
 import { formatTempES, monthLabel } from "./dates";
 import { resumenEncargoLineas } from "./orders";
 import type { ActivityItem, EncargoItem, InventarioItem, NeveraDia, ProductoStock } from "../types";
@@ -83,13 +84,7 @@ export function neverasRows(items: NeveraDia[]) {
   return items.map((d) => ({
     Fecha: d.fecha,
     Hora: d.hora,
-    N1: formatTempES(d.temps[0] ?? 0),
-    N2: formatTempES(d.temps[1] ?? 0),
-    N3: formatTempES(d.temps[2] ?? 0),
-    N4: formatTempES(d.temps[3] ?? 0),
-    N5: formatTempES(d.temps[4] ?? 0),
-    N6: formatTempES(d.temps[5] ?? 0),
-    N7: formatTempES(d.temps[6] ?? 0),
+    ...Object.fromEntries(NEVERA_NOMBRES.map((nombre, i) => [nombre, formatTempES(d.temps[i] ?? 0)])),
     Persona: d.persona,
     Mes: monthLabel(d.mes),
   }));

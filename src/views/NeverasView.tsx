@@ -1,5 +1,5 @@
 import { type FormEvent, useEffect, useState } from "react";
-import { TEMP_ALERT, TEMP_MAX, TEMP_MIN } from "../data/constants";
+import { NEVERA_NOMBRES, TEMP_ALERT, TEMP_MAX, TEMP_MIN } from "../data/constants";
 import { formatTempES, todayISO } from "../lib/dates";
 import { fridgeBadge } from "../lib/orders";
 import { useAppStore } from "../store/AppStore";
@@ -21,8 +21,8 @@ export function NeverasView() {
   function validate(values: number[]): string | null {
     for (let i = 0; i < 7; i += 1) {
       const t = values[i];
-      if (Number.isNaN(t)) return `La nevera ${i + 1} no tiene un número válido.`;
-      if (t < TEMP_MIN || t > TEMP_MAX) return `La nevera ${i + 1} debe estar entre ${TEMP_MIN} °C y ${TEMP_MAX} °C.`;
+      if (Number.isNaN(t)) return `${NEVERA_NOMBRES[i]} no tiene un número válido.`;
+      if (t < TEMP_MIN || t > TEMP_MAX) return `${NEVERA_NOMBRES[i]} debe estar entre ${TEMP_MIN} °C y ${TEMP_MAX} °C.`;
     }
     return null;
   }
@@ -78,7 +78,7 @@ export function NeverasView() {
                 <div key={index} className="flex items-center justify-between px-4 py-3">
                   <label className="flex items-center gap-2 font-bold">
                     <span className={`h-3 w-3 rounded-full ${high ? "bg-red-600" : "bg-sky-600"}`} />
-                    Nevera {index + 1}
+                    {NEVERA_NOMBRES[index]}
                     {high ? <span className="text-xs text-red-700">⚠️</span> : null}
                   </label>
                   <div className="flex items-center gap-2">
@@ -135,12 +135,12 @@ export function NeverasView() {
                         {badge.text}
                       </span>
                     </div>
-                    <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
                       {day.temps.map((t, idx) => {
                         const high = t > TEMP_ALERT;
                         return (
                           <div key={idx} className={`rounded-xl border p-2 text-center ${high ? "border-red-300 bg-red-50" : "bg-slate-50"}`}>
-                            <span className="block text-[11px] font-bold">N{idx + 1}</span>
+                            <span className="block text-[11px] font-bold leading-tight">{NEVERA_NOMBRES[idx]}</span>
                             <span className={`font-extrabold ${high ? "text-red-700" : "text-sky-900"}`}>{formatTempES(t)}°</span>
                           </div>
                         );
@@ -173,8 +173,10 @@ export function NeverasView() {
                   <thead className="bg-slate-100 text-xs uppercase">
                     <tr>
                       <th className="px-3 py-2 text-left">Fecha</th>
-                      {[1, 2, 3, 4, 5, 6, 7].map((n) => (
-                        <th key={n} className="px-2 py-2">N{n}</th>
+                      {NEVERA_NOMBRES.map((nombre) => (
+                        <th key={nombre} className="max-w-[5.5rem] px-2 py-2 leading-tight">
+                          {nombre}
+                        </th>
                       ))}
                       <th className="px-3 py-2">Persona</th>
                     </tr>

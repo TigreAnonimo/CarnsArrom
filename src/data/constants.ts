@@ -19,3 +19,13 @@ export const PRODUCT_CHIPS = [
 export const TEMP_ALERT = 5.0;
 export const TEMP_MIN = -30;
 export const TEMP_MAX = 15;
+
+export const NEVERA_NOMBRES = [
+  "Nevera alta",
+  "Nevera carnicería",
+  "Vitrina pollo",
+  "Vitrina carnicería",
+  "Nevera charcutería",
+  "Vitrina sobres",
+  "Vitrina charcutería",
+] as const;

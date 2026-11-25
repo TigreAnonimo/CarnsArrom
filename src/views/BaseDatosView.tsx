@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { TEMP_ALERT } from "../data/constants";
+import { NEVERA_NOMBRES, TEMP_ALERT } from "../data/constants";
 import {
   actividadRows,
   encargosRows,
@@ -88,7 +88,7 @@ export function BaseDatosView() {
       if (tab === "neveras") {
         exportPdf(
           titleMap.neveras,
-          ["Fecha", "Hora", "N1", "N2", "N3", "N4", "N5", "N6", "N7", "Persona"],
+          ["Fecha", "Hora", ...NEVERA_NOMBRES, "Persona"],
           neveras.map((d) => [d.fecha, d.hora, ...d.temps.map((t) => formatTempES(t)), d.persona]),
           filename("neveras", "pdf"),
         );
@@ -234,7 +234,7 @@ export function BaseDatosView() {
 
       {tab === "neveras" ? (
         <Table
-          head={["Fecha", "N1", "N2", "N3", "N4", "N5", "N6", "N7", "Persona"]}
+          head={["Fecha", ...NEVERA_NOMBRES, "Persona"]}
           rows={neveras.map((day) => [
             `${day.fecha} ${day.hora}`,
             ...day.temps.map((t) => `${formatTempES(t)}°${t > TEMP_ALERT ? " ⚠️" : ""}`),
