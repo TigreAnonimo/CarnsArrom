@@ -2,6 +2,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { formatTempES, monthLabel } from "./dates";
+import { resumenEncargoLineas } from "./orders";
 import type { ActivityItem, EncargoItem, InventarioItem, NeveraDia, ProductoStock } from "../types";
 
 function downloadBlob(filename: string, blob: Blob) {
@@ -67,8 +68,10 @@ export function inventarioRows(items: InventarioItem[] | ProductoStock[]) {
 export function encargosRows(items: EncargoItem[]) {
   return items.map((o) => ({
     Número: o.numero,
-    Producto: o.producto,
-    Cantidad: o.cantidad,
+    Producto: resumenEncargoLineas(o.producto, o.cantidad),
+    Cantidad: o.cantidad.replace(/\n/g, " · "),
+    Cliente: o.cliente,
+    Teléfono: o.telefono,
     Recogida: o.dia,
     Persona: o.persona,
     Estado: o.estado,

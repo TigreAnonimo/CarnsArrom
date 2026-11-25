@@ -10,7 +10,7 @@ import {
   neverasRows,
 } from "../lib/export";
 import { formatTempES, monthLabel } from "../lib/dates";
-import { getOrderBadgeStyle } from "../lib/orders";
+import { getOrderBadgeStyle, resumenEncargoLineas } from "../lib/orders";
 import { useAppStore } from "../store/AppStore";
 import { useAuth } from "../store/AuthStore";
 import type { BackupPayload, DbEncFilter, DbTab } from "../types";
@@ -53,7 +53,7 @@ export function BaseDatosView() {
 
   const encargos = data.encargos.filter((o) => {
     const q = search.toLowerCase();
-    const textOk = !q || `${o.numero} ${o.producto} ${o.persona}`.toLowerCase().includes(q);
+    const textOk = !q || `${o.numero} ${o.producto} ${o.cliente} ${o.telefono} ${o.persona}`.toLowerCase().includes(q);
     const statusOk = encFilter === "Todos" || o.estado === encFilter;
     const workerOk = workerFilter === "all" || o.persona === workerFilter;
     const fechaOk = !fecha || o.diaISO === fecha;
@@ -102,8 +102,17 @@ export function BaseDatosView() {
       } else if (tab === "encargos") {
         exportPdf(
           titleMap.encargos,
-          ["Nº", "Producto", "Cant.", "Recogida", "Persona", "Estado"],
-          encargos.map((o) => [o.numero, o.producto, o.cantidad, o.dia, o.persona, o.estado]),
+          ["Nº", "Producto", "Cant.", "Cliente", "Tel.", "Recogida", "Persona", "Estado"],
+          encargos.map((o) => [
+            o.numero,
+            resumenEncargoLineas(o.producto, o.cantidad),
+            o.cantidad.replace(/\n/g, " · "),
+            o.cliente,
+            o.telefono,
+            o.dia,
+            o.persona,
+            o.estado,
+          ]),
           filename("encargos", "pdf"),
         );
       } else {
@@ -241,9 +250,9 @@ export function BaseDatosView() {
       ) : null}
       {tab === "encargos" ? (
         <Table
-          head={["Nº", "Producto", "Recogida", "Persona", "Estado"]}
-          rows={encargos.map((o) => [o.numero, `${o.producto} (${o.cantidad})`, o.dia, o.persona, o.estado])}
-          badgeCol={4}
+          head={["Nº", "Producto", "Cliente", "Tel.", "Recogida", "Persona", "Estado"]}
+          rows={encargos.map((o) => [o.numero, resumenEncargoLineas(o.producto, o.cantidad), o.cliente, o.telefono, o.dia, o.persona, o.estado])}
+          badgeCol={6}
           badgeClass={(v) => getOrderBadgeStyle(v as "Pendiente" | "Preparado" | "Entregado")}
         />
       ) : null}

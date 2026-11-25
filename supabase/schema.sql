@@ -37,20 +37,82 @@ create table if not exists public.inventario (
   created_at timestamptz not null default now()
 );
 
-create sequence if not exists public.encargos_numero_seq start with 1 increment by 1;
-
 create table if not exists public.encargos (
   id uuid primary key default gen_random_uuid(),
-  numero integer not null unique default nextval('public.encargos_numero_seq'),
+  numero integer not null,
   producto text not null,
   cantidad text not null,
+  cliente text not null default '',
+  telefono text not null default '',
   persona text not null,
   dia date not null,
   obs text not null default '',
   estado text not null check (estado in ('Pendiente', 'Preparado', 'Entregado')),
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  constraint encargos_dia_numero_key unique (dia, numero)
 );
+
+create or replace function public.siguiente_numero_encargo(p_dia date, p_except uuid default null)
+returns integer
+language sql
+stable
+set search_path = public
+as $$
+  select coalesce(
+    (
+      select s.n
+      from generate_series(
+        1,
+        greatest(
+          coalesce(
+            (
+              select max(e.numero)
+              from public.encargos e
+              where e.dia = p_dia
+                and (p_except is null or e.id <> p_except)
+            ),
+            0
+          ),
+          0
+        ) + 1
+      ) as s(n)
+      where not exists (
+        select 1
+        from public.encargos e
+        where e.dia = p_dia
+          and e.numero = s.n
+          and (p_except is null or e.id <> p_except)
+      )
+      order by s.n
+      limit 1
+    ),
+    1
+  );
+$$;
+
+create or replace function public.encargos_asignar_numero()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if tg_op = 'INSERT' then
+    new.numero := public.siguiente_numero_encargo(new.dia);
+  elsif tg_op = 'UPDATE' and new.dia is distinct from old.dia then
+    new.numero := public.siguiente_numero_encargo(new.dia, new.id);
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists encargos_asignar_numero on public.encargos;
+create trigger encargos_asignar_numero
+  before insert or update of dia on public.encargos
+  for each row
+  execute function public.encargos_asignar_numero();
+
+grant execute on function public.siguiente_numero_encargo(date, uuid) to anon, authenticated;
 
 create table if not exists public.neveras (
   id uuid primary key default gen_random_uuid(),

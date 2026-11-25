@@ -65,6 +65,9 @@ interface AppStoreValue {
   saveEncargo: (item: {
     producto: string;
     cantidad: string;
+    cliente: string;
+    telefono: string;
+    persona: string;
     diaISO: string;
     obs: string;
     estado: EncargoEstado;
@@ -74,6 +77,9 @@ interface AppStoreValue {
     patch: {
       producto: string;
       cantidad: string;
+      cliente: string;
+      telefono: string;
+      persona: string;
       diaISO: string;
       obs: string;
       estado: EncargoEstado;
@@ -131,6 +137,8 @@ function mapEncargo(row: Record<string, unknown>): EncargoItem {
     numeroInt,
     producto: String(row.producto),
     cantidad: String(row.cantidad),
+    cliente: String(row.cliente ?? ""),
+    telefono: String(row.telefono ?? ""),
     persona: String(row.persona),
     dia: formatDateES(diaISO),
     diaISO,
@@ -377,33 +385,49 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     async (item: {
       producto: string;
       cantidad: string;
+      cliente: string;
+      telefono: string;
+      persona: string;
       diaISO: string;
       obs: string;
       estado: EncargoEstado;
     }) => {
       const client = requireSupabase();
-      const { data: created, error } = await client
-        .from("encargos")
-        .insert({
-          producto: item.producto,
-          cantidad: item.cantidad,
-          persona: worker.nombre,
-          dia: item.diaISO,
-          obs: item.obs,
-          estado: item.estado,
-        })
-        .select("id, numero")
-        .single();
-      if (error) throw error;
+      let created: { id: string; numero: number } | null = null;
+      let lastError: { message: string; code?: string } | null = null;
+      for (let intento = 0; intento < 3; intento += 1) {
+        const { data: row, error } = await client
+          .from("encargos")
+          .insert({
+            producto: item.producto,
+            cantidad: item.cantidad,
+            cliente: item.cliente,
+            telefono: item.telefono,
+            persona: item.persona,
+            dia: item.diaISO,
+            obs: item.obs,
+            estado: item.estado,
+          })
+          .select("id, numero")
+          .single();
+        if (!error && row) {
+          created = { id: String(row.id), numero: Number(row.numero) };
+          lastError = null;
+          break;
+        }
+        lastError = error;
+        if (error?.code !== "23505") break;
+      }
+      if (!created) throw new Error(lastError?.message ?? "No se pudo guardar el encargo");
       await logActivity(
         "crear_encargo",
-        `${worker.nombre} creó el encargo ${formatEncargoNumero(Number(created.numero))} — ${item.producto}`,
+        `${item.persona} creó el encargo ${formatEncargoNumero(created.numero)} (${item.diaISO}) — ${item.producto} (${item.cliente})`,
         "encargo",
         String(created.id),
       );
       await reload();
     },
-    [logActivity, reload, worker.nombre],
+    [logActivity, reload],
   );
 
   const updateEncargo = useCallback(
@@ -412,6 +436,9 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       patch: {
         producto: string;
         cantidad: string;
+        cliente: string;
+        telefono: string;
+        persona: string;
         diaISO: string;
         obs: string;
         estado: EncargoEstado;
@@ -424,13 +451,16 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         .update({
           producto: patch.producto,
           cantidad: patch.cantidad,
+          cliente: patch.cliente,
+          telefono: patch.telefono,
+          persona: patch.persona,
           dia: patch.diaISO,
           obs: patch.obs,
           estado: patch.estado,
           updated_at: new Date().toISOString(),
         })
         .eq("id", id);
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       await logActivity(
         "modificar_encargo",
         `${worker.nombre} modificó el encargo ${current?.numero ?? id}`,
@@ -592,6 +622,8 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
             numero: o.numeroInt,
             producto: o.producto,
             cantidad: o.cantidad,
+            cliente: o.cliente,
+            telefono: o.telefono,
             persona: o.persona,
             dia: o.diaISO,
             obs: o.obs,

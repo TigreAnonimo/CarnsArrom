@@ -61,6 +61,8 @@ export interface EncargoItem {
   numeroInt: number;
   producto: string;
   cantidad: string;
+  cliente: string;
+  telefono: string;
   persona: string;
   dia: string;
   diaISO: string;

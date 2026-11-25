@@ -54,9 +54,9 @@ Tiene que quedar al menos un administrador.
 
 ## Encargos
 
-El **número se asigna solo**: #1, #2, #3… No hay que escribirlo.
+El **número es por día de recogida**: cada fecha #1, #2, #3… Otro día vuelve a empezar en #1. Si se borra un encargo, ese número se reutiliza. El mismo número no se repite en el mismo día.
 
-Al crear: producto, cantidad, día de recogida, observaciones y estado inicial (Pendiente o Preparado).
+Al crear verás el **número de ese día**. También se apunta el **nombre y teléfono del cliente**, las cosas pedidas **una por línea** (producto + cantidad), día de recogida, quién lo registra, observaciones y estado inicial (Pendiente o Preparado). **Entregado** no borra el pedido: pasa a la pestaña Entregados.
 
 Estados:
 
