@@ -37,6 +37,39 @@ function faltaClienteOTelefono(cliente: string, telefono: string): string | null
   return null;
 }
 
+function FiltroFechaEncargos({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (iso: string) => void;
+}) {
+  return (
+    <div className="flex w-full flex-wrap items-end gap-2 sm:w-auto">
+      <label className="relative min-w-[11rem] flex-1">
+        <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-slate-500">Fecha (dd/mm/aa)</span>
+        <input
+          type="date"
+          lang="es-ES"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className={`w-full rounded-xl border-2 border-slate-300 px-3 py-2 text-sm font-bold ${value ? "text-slate-900" : "text-transparent"}`}
+        />
+        {!value ? (
+          <span className="pointer-events-none absolute bottom-2.5 left-3 text-sm font-bold text-slate-400">dd/mm/aa</span>
+        ) : null}
+      </label>
+      <button
+        type="button"
+        onClick={() => onChange("")}
+        className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-extrabold text-slate-700"
+      >
+        Restablecer
+      </button>
+    </div>
+  );
+}
+
 function EncargoLineasLista({ producto, cantidad }: { producto: string; cantidad: string }) {
   const items = parseEncargoLineas(producto, cantidad).filter((l) => l.producto || l.cantidad);
   if (!items.length) return null;
@@ -286,7 +319,7 @@ export function EncargosView() {
                   </button>
                 ))
               : null}
-            <input type="date" value={filtroFecha} onChange={(e) => setFiltroFecha(e.target.value)} className="rounded-xl border px-2 py-1 text-xs" />
+            <FiltroFechaEncargos value={filtroFecha} onChange={setFiltroFecha} />
           </div>
           {totalBusqueda ? (
             <p className="rounded-xl bg-brand-light px-3 py-2 text-xs font-extrabold text-brand">{totalBusqueda}</p>
