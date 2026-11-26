@@ -1,6 +1,6 @@
 export const WORKERS = [
   "Jesús",
-  "Jordy",
+  "Jordi",
   "Jony",
   "Joel",
   "Mónica",

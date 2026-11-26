@@ -222,7 +222,7 @@ grant execute on function public.set_trabajador_pin(uuid, text) to anon, authent
 insert into public.trabajadores (nombre, pin_hash, es_admin)
 values
   ('Jesús', crypt('2026', gen_salt('bf')), true),
-  ('Jordy', crypt('2026', gen_salt('bf')), false),
+  ('Jordi', crypt('2026', gen_salt('bf')), false),
   ('Jony', crypt('2026', gen_salt('bf')), false),
   ('Joel', crypt('2026', gen_salt('bf')), false),
   ('Mónica', crypt('2026', gen_salt('bf')), false),

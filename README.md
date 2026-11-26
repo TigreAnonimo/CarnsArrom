@@ -2,7 +2,7 @@
 
 Aplicación para el día a día de la carnicería: inventario de cámara, encargos de clientes y temperaturas de las 7 neveras. Los datos se guardan online (Supabase) y se ven igual en el ordenador y en el móvil.
 
-Trabajadores: **Jesús, Jordy, Jony, Joel, Mónica, Chema y Sonia**.
+Trabajadores: **Jesús, Jordi, Jony, Joel, Mónica, Chema y Sonia**.
 
 ---
 

@@ -61,7 +61,7 @@ export function Layout({ children }: { children: ReactNode }) {
         <footer className="mt-auto border-t border-slate-200 bg-white px-3 py-3 text-center sm:px-6 sm:py-4">
           <p className="text-[10px] font-medium text-slate-400 sm:text-xs">
             Carns Arrom — Gestión Interna
-            <span className="block font-semibold text-slate-600 sm:inline"> · Jesús, Jordy, Jony, Joel, Mónica, Chema y Sonia</span>
+            <span className="block font-semibold text-slate-600 sm:inline"> · Jesús, Jordi, Jony, Joel, Mónica, Chema y Sonia</span>
           </p>
         </footer>
       </div>
