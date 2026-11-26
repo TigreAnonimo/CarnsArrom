@@ -2,12 +2,15 @@ import { type FormEvent, useMemo, useState } from "react";
 import { WorkerPicker } from "../components/WorkerPicker";
 import { addDaysISO, formatDateES, todayISO } from "../lib/dates";
 import {
+  etiquetaCantidad,
   formatEncargoNumero,
   getOrderBadgeStyle,
   parseEncargoLineas,
   serializeEncargoLineas,
   siguienteNumeroEncargo,
+  textoTotalBusqueda,
   type EncargoLinea,
+  type EncargoUnidad,
 } from "../lib/orders";
 import { useAppStore } from "../store/AppStore";
 import type { EncargoEstado, EncargoItem } from "../types";
@@ -42,7 +45,7 @@ function EncargoLineasLista({ producto, cantidad }: { producto: string; cantidad
       {items.map((l, i) => (
         <li key={`${l.producto}-${i}`} className="text-base font-extrabold leading-snug">
           {l.producto}
-          {l.cantidad ? <span className="ml-2 font-bold text-slate-600">· {l.cantidad}</span> : null}
+          {etiquetaCantidad(l) ? <span className="ml-2 font-bold text-slate-600">· {etiquetaCantidad(l)}</span> : null}
         </li>
       ))}
     </ul>
@@ -61,40 +64,61 @@ function LineasEncargoEditor({
   function patch(i: number, campo: keyof EncargoLinea, valor: string) {
     onChange(lineas.map((l, idx) => (idx === i ? { ...l, [campo]: valor } : l)));
   }
+  function setUnidad(i: number, unidad: EncargoUnidad) {
+    onChange(lineas.map((l, idx) => (idx === i ? { ...l, unidad } : l)));
+  }
+  const pad = compact ? "py-2" : "py-3";
   return (
     <div className="space-y-2">
       <p className={`block font-bold ${compact ? "text-sm" : "text-base"}`}>Qué pide (una cosa por línea)</p>
       {lineas.map((l, i) => (
-        <div key={i} className="flex gap-2">
+        <div key={i} className="space-y-2 rounded-xl border-2 border-slate-200 p-2">
           <input
             required={i === 0}
             value={l.producto}
             onChange={(e) => patch(i, "producto", e.target.value)}
             placeholder={`Producto ${i + 1}`}
-            className={`min-w-0 flex-1 rounded-xl border-2 px-3 ${compact ? "py-2" : "py-3"}`}
+            className={`w-full rounded-xl border-2 px-3 ${pad}`}
           />
-          <input
-            required={i === 0}
-            value={l.cantidad}
-            onChange={(e) => patch(i, "cantidad", e.target.value)}
-            placeholder="Cant."
-            className={`w-24 shrink-0 rounded-xl border-2 px-3 font-extrabold ${compact ? "py-2" : "py-3"} sm:w-28`}
-          />
-          {lineas.length > 1 ? (
+          <div className="flex gap-2">
+            <input
+              required={i === 0}
+              value={l.cantidad}
+              onChange={(e) => patch(i, "cantidad", e.target.value)}
+              inputMode="decimal"
+              placeholder="Cant."
+              className={`w-20 shrink-0 rounded-xl border-2 px-3 font-extrabold ${pad} sm:w-24`}
+            />
             <button
               type="button"
-              onClick={() => onChange(lineas.filter((_, idx) => idx !== i))}
-              className="shrink-0 rounded-xl bg-red-50 px-2 text-xs font-extrabold text-red-700"
-              aria-label="Quitar esta línea"
+              onClick={() => setUnidad(i, "ud")}
+              className={`flex-1 rounded-xl border-2 text-xs font-extrabold ${l.unidad === "ud" ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200"}`}
             >
-              ✕
+              Ud
             </button>
-          ) : null}
+            <button
+              type="button"
+              onClick={() => setUnidad(i, "kg")}
+              className={`flex-1 rounded-xl border-2 text-xs font-extrabold ${l.unidad === "kg" ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200"}`}
+            >
+              Kg
+            </button>
+            {lineas.length > 1 ? (
+              <button
+                type="button"
+                onClick={() => onChange(lineas.filter((_, idx) => idx !== i))}
+                className="shrink-0 rounded-xl bg-red-50 px-2 text-xs font-extrabold text-red-700"
+                aria-label="Quitar esta línea"
+              >
+                ✕
+              </button>
+            ) : null}
+          </div>
         </div>
       ))}
       <button
         type="button"
-        onClick={() => onChange([...lineas, { producto: "", cantidad: "" }])}
+        onClick={() => onChange([...lineas, { producto: "", cantidad: "", unidad: "ud" }])}
         className="w-full rounded-xl border-2 border-dashed border-brand/40 py-2 text-sm font-extrabold text-brand"
       >
         + Añadir otra cosa
@@ -120,7 +144,7 @@ export function EncargosView() {
   const [filtroEstado, setFiltroEstado] = useState<"Todos" | "Pendiente" | "Preparado">("Todos");
   const [filtroFecha, setFiltroFecha] = useState("");
   const [dia, setDia] = useState(addDaysISO(todayISO(), 1));
-  const [lineas, setLineas] = useState<EncargoLinea[]>([{ producto: "", cantidad: "" }]);
+  const [lineas, setLineas] = useState<EncargoLinea[]>([{ producto: "", cantidad: "", unidad: "ud" }]);
   const [cliente, setCliente] = useState("");
   const [telefono, setTelefono] = useState("");
   const [persona, setPersona] = useState(worker.nombre);
@@ -160,6 +184,10 @@ export function EncargosView() {
   );
   const nActivos = data.encargos.filter((o) => o.estado !== "Entregado").length;
   const nEntregados = data.encargos.filter((o) => o.estado === "Entregado").length;
+  const totalBusqueda = useMemo(
+    () => textoTotalBusqueda(tab === "entregados" ? entregados : activos, busqueda),
+    [tab, activos, entregados, busqueda],
+  );
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -183,7 +211,7 @@ export function EncargosView() {
         obs: obs.trim(),
         estado,
       });
-      setLineas([{ producto: "", cantidad: "" }]);
+      setLineas([{ producto: "", cantidad: "", unidad: "ud" }]);
       setCliente("");
       setTelefono("");
       setPersona(worker.nombre);
@@ -260,6 +288,9 @@ export function EncargosView() {
               : null}
             <input type="date" value={filtroFecha} onChange={(e) => setFiltroFecha(e.target.value)} className="rounded-xl border px-2 py-1 text-xs" />
           </div>
+          {totalBusqueda ? (
+            <p className="rounded-xl bg-brand-light px-3 py-2 text-xs font-extrabold text-brand">{totalBusqueda}</p>
+          ) : null}
         </div>
       ) : null}
 
