@@ -1,7 +1,9 @@
+import { useLang } from "../i18n/LangStore";
 import { useAppStore } from "../store/AppStore";
 
 export function ConfirmModal() {
   const { confirm, closeConfirm } = useAppStore();
+  const { t } = useLang();
   if (!confirm) return null;
 
   return (
@@ -22,7 +24,7 @@ export function ConfirmModal() {
             onClick={closeConfirm}
             className="rounded-xl bg-slate-100 px-4 py-3.5 text-base font-bold text-slate-700 hover:bg-slate-200"
           >
-            Cancelar
+            {t("common.cancel")}
           </button>
           <button
             type="button"

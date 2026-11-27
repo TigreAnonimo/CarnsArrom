@@ -1,14 +1,25 @@
 import { TEMP_ALERT } from "../data/constants";
+import { useLang } from "../i18n/LangStore";
 import { todayISO } from "../lib/dates";
 import { fridgeBadge } from "../lib/orders";
 import { useAppStore } from "../store/AppStore";
 
 export function HomeView() {
   const { data, navigateTo, loading, syncError, worker } = useAppStore();
+  const { t, lang } = useLang();
   const stockCount = data.productos.filter((i) => i.estado === "En almacén").length;
   const activeOrders = data.encargos.filter((o) => o.estado !== "Entregado").length;
   const todayFridge = data.neverasPorDia.find((d) => d.fechaISO === todayISO());
   const fridge = todayFridge ? fridgeBadge(todayFridge.temps, TEMP_ALERT) : null;
+  const fridgeLabel = fridge
+    ? fridge.alerts === 0
+      ? t("fridge.ok")
+      : t("fridge.alert", {
+          ok: 7 - fridge.alerts,
+          n: fridge.alerts,
+          s: fridge.alerts === 1 ? "" : lang === "ca" ? "es" : "s",
+        })
+    : t("home.fridgesPending");
 
   return (
     <section className="fade-in space-y-6">
@@ -17,10 +28,10 @@ export function HomeView() {
           {syncError}
         </div>
       ) : null}
-      {loading ? <p className="text-sm font-semibold text-slate-500">Sincronizando datos…</p> : null}
+      {loading ? <p className="text-sm font-semibold text-slate-500">{t("home.sync")}</p> : null}
       <div className="pt-1">
-        <h2 className="text-2xl font-extrabold text-slate-900">Panel principal</h2>
-        <p className="mt-0.5 text-base text-slate-600">Selecciona qué quieres gestionar hoy</p>
+        <h2 className="text-2xl font-extrabold text-slate-900">{t("home.title")}</h2>
+        <p className="mt-0.5 text-base text-slate-600">{t("home.subtitle")}</p>
       </div>
 
       <div className="space-y-4">
@@ -29,10 +40,10 @@ export function HomeView() {
           hover="hover:bg-brand-light/40 hover:border-brand"
           iconWrap="bg-brand-light text-brand border-brand-border"
           icon="📦"
-          title="INVENTARIO"
-          badge={`${stockCount} en stock`}
+          title={t("home.inventory")}
+          badge={t("home.inventoryBadge", { n: stockCount })}
           badgeClass="bg-slate-100 text-slate-700 border-slate-300"
-          subtitle="Conteo de cámara y productos agotados"
+          subtitle={t("home.inventorySub")}
           arrowHover="group-hover:text-brand"
         />
         <HomeCard
@@ -40,10 +51,10 @@ export function HomeView() {
           hover="hover:bg-amber-50/50 hover:border-amber-600"
           iconWrap="bg-amber-50 text-amber-700 border-amber-200"
           icon="📝"
-          title="ENCARGOS"
-          badge={`${activeOrders} activo${activeOrders === 1 ? "" : "s"}`}
+          title={t("home.orders")}
+          badge={t("home.ordersBadge", { n: activeOrders, s: activeOrders === 1 ? "" : "s" })}
           badgeClass="bg-amber-100 text-amber-900 border-amber-300"
-          subtitle="Pedidos de clientes pendientes y preparados"
+          subtitle={t("home.ordersSub")}
           arrowHover="group-hover:text-amber-700"
         />
         <HomeCard
@@ -51,14 +62,14 @@ export function HomeView() {
           hover="hover:bg-sky-50/50 hover:border-sky-700"
           iconWrap="bg-sky-50 text-sky-700 border-sky-200"
           icon="❄️"
-          title="NEVERAS"
-          badge={fridge ? fridge.text : "Pendiente hoy"}
+          title={t("home.fridges")}
+          badge={fridgeLabel}
           badgeClass={
             fridge && !fridge.ok
               ? "bg-red-100 text-red-800 border-red-300"
               : "bg-sky-100 text-sky-900 border-sky-300"
           }
-          subtitle="Temperatura diaria de las 7 neveras"
+          subtitle={t("home.fridgesSub")}
           arrowHover="group-hover:text-sky-700"
         />
         {worker.esAdmin ? (
@@ -71,9 +82,9 @@ export function HomeView() {
               📊
             </div>
             <div className="min-w-0 flex-1">
-              <span className="block text-lg font-extrabold tracking-tight text-white sm:text-xl">BASE DE DATOS</span>
+              <span className="block text-lg font-extrabold tracking-tight text-white sm:text-xl">{t("home.db")}</span>
               <span className="mt-0.5 block text-xs font-medium text-slate-300 sm:text-sm">
-                Historial, equipo, exportaciones y copias de seguridad
+                {t("home.dbSub")}
               </span>
             </div>
             <Arrow className="text-slate-400 group-hover:text-white" />
@@ -83,12 +94,12 @@ export function HomeView() {
 
       <div className="pt-1">
         <div className="mb-2.5 flex items-center justify-between">
-          <h3 className="text-sm font-extrabold uppercase tracking-wider text-slate-700">Últimos registros</h3>
-          <span className="text-xs font-semibold text-slate-500">Actividad reciente</span>
+          <h3 className="text-sm font-extrabold uppercase tracking-wider text-slate-700">{t("home.recent")}</h3>
+          <span className="text-xs font-semibold text-slate-500">{t("home.activity")}</span>
         </div>
         <div className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           {data.recentActivity.length === 0 ? (
-            <p className="p-4 text-sm text-slate-500">Aún no hay actividad.</p>
+            <p className="p-4 text-sm text-slate-500">{t("home.noActivity")}</p>
           ) : (
             data.recentActivity.slice(0, 4).map((item) => (
               <div key={item.id} className="flex items-center justify-between gap-3 p-3.5">
@@ -100,7 +111,7 @@ export function HomeView() {
                   </div>
                 </div>
                 <span className={`shrink-0 rounded-lg border px-2.5 py-1 text-xs font-extrabold ${item.badgeColor}`}>
-                  {item.badge}
+                  {t(`badge.${item.badge}`)}
                 </span>
               </div>
             ))

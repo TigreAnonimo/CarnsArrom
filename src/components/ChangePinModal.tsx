@@ -1,10 +1,12 @@
 import { type FormEvent, useState } from "react";
+import { useLang } from "../i18n/LangStore";
 import { useAppStore } from "../store/AppStore";
 import { useAuth } from "../store/AuthStore";
 
 export function ChangePinModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { changeOwnPin, session } = useAuth();
   const { showToast } = useAppStore();
+  const { t } = useLang();
   const [actual, setActual] = useState("");
   const [nuevo, setNuevo] = useState("");
   const [repetir, setRepetir] = useState("");
@@ -17,11 +19,11 @@ export function ChangePinModal({ open, onClose }: { open: boolean; onClose: () =
     e.preventDefault();
     setError("");
     if (nuevo !== repetir) {
-      setError("El PIN nuevo y la repetición no coinciden.");
+      setError(t("pin.mismatch"));
       return;
     }
     if (!/^\d{4,8}$/.test(nuevo)) {
-      setError("El PIN nuevo debe tener entre 4 y 8 números.");
+      setError(t("pin.length"));
       return;
     }
     setBusy(true);
@@ -35,17 +37,15 @@ export function ChangePinModal({ open, onClose }: { open: boolean; onClose: () =
     setNuevo("");
     setRepetir("");
     onClose();
-    showToast("PIN actualizado", `El PIN de ${session?.nombre ?? "tu usuario"} se ha cambiado.`);
+    showToast(t("pin.ok"), t("pin.okDesc", { name: session?.nombre ?? "" }));
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4">
       <form onSubmit={(e) => void onSubmit(e)} className="fade-in w-full max-w-[400px] space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
         <div>
-          <h3 className="text-lg font-extrabold text-slate-900">Cambiar PIN</h3>
-          <p className="mt-1 text-sm text-slate-600">
-            {session?.nombre}: pon el PIN actual y elige uno nuevo de 4 a 8 números.
-          </p>
+          <h3 className="text-lg font-extrabold text-slate-900">{t("pin.title")}</h3>
+          <p className="mt-1 text-sm text-slate-600">{t("pin.hint", { name: session?.nombre ?? "" })}</p>
         </div>
         <input
           type="password"
@@ -54,7 +54,7 @@ export function ChangePinModal({ open, onClose }: { open: boolean; onClose: () =
           required
           value={actual}
           onChange={(e) => setActual(e.target.value.replace(/\D/g, "").slice(0, 8))}
-          placeholder="PIN actual"
+          placeholder={t("pin.current")}
           className="w-full rounded-xl border-2 border-slate-300 px-4 py-3 text-center text-xl font-extrabold tracking-[0.3em]"
         />
         <input
@@ -64,7 +64,7 @@ export function ChangePinModal({ open, onClose }: { open: boolean; onClose: () =
           required
           value={nuevo}
           onChange={(e) => setNuevo(e.target.value.replace(/\D/g, "").slice(0, 8))}
-          placeholder="PIN nuevo"
+          placeholder={t("pin.new")}
           className="w-full rounded-xl border-2 border-slate-300 px-4 py-3 text-center text-xl font-extrabold tracking-[0.3em]"
         />
         <input
@@ -74,16 +74,16 @@ export function ChangePinModal({ open, onClose }: { open: boolean; onClose: () =
           required
           value={repetir}
           onChange={(e) => setRepetir(e.target.value.replace(/\D/g, "").slice(0, 8))}
-          placeholder="Repetir PIN nuevo"
+          placeholder={t("pin.repeat")}
           className="w-full rounded-xl border-2 border-slate-300 px-4 py-3 text-center text-xl font-extrabold tracking-[0.3em]"
         />
         {error ? <p className="text-sm font-bold text-red-700">{error}</p> : null}
         <div className="grid grid-cols-2 gap-3 pt-1">
           <button type="button" onClick={onClose} className="rounded-xl bg-slate-100 py-3.5 font-bold text-slate-700">
-            Cancelar
+            {t("common.cancel")}
           </button>
           <button type="submit" disabled={busy} className="rounded-xl bg-brand py-3.5 font-extrabold text-white disabled:opacity-50">
-            {busy ? "Guardando…" : "Guardar"}
+            {busy ? t("common.saving") : t("common.save")}
           </button>
         </div>
       </form>

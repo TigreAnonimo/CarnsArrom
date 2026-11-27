@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { LanguageToggle, useLang } from "../i18n/LangStore";
 import { useAuth } from "../store/AuthStore";
 
 export function LoginView() {
   const { workers, login, loginError, loading } = useAuth();
+  const { t } = useLang();
   const [nombre, setNombre] = useState("");
   const [pin, setPin] = useState("");
   const [busy, setBusy] = useState(false);
@@ -17,16 +19,19 @@ export function LoginView() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#E9EEF4] p-4">
       <div className="w-full max-w-md space-y-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-xl">
+        <div className="flex justify-end">
+          <LanguageToggle />
+        </div>
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand text-lg font-extrabold text-white">
             CA
           </div>
           <div>
             <h1 className="text-xl font-extrabold text-slate-900">Carns Arrom</h1>
-            <p className="text-xs font-bold uppercase tracking-wider text-brand">Acceso interno</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-brand">{t("login.access")}</p>
           </div>
         </div>
-        <p className="text-sm text-slate-600">Toca tu nombre e introduce el PIN.</p>
+        <p className="text-sm text-slate-600">{t("login.hint")}</p>
         <div className="grid grid-cols-2 gap-2">
           {workers.map((w) => (
             <button
@@ -40,7 +45,7 @@ export function LoginView() {
               }`}
             >
               {w.nombre}
-              {w.esAdmin ? <span className="mt-1 block text-[10px] font-bold opacity-80">Admin</span> : null}
+              {w.esAdmin ? <span className="mt-1 block text-[10px] font-bold opacity-80">{t("common.admin")}</span> : null}
             </button>
           ))}
         </div>
@@ -60,7 +65,7 @@ export function LoginView() {
           onClick={() => void submit()}
           className="w-full rounded-2xl bg-brand py-4 text-lg font-extrabold text-white disabled:opacity-50"
         >
-          {busy ? "Entrando…" : "Entrar"}
+          {busy ? t("login.entering") : t("login.enter")}
         </button>
       </div>
     </div>

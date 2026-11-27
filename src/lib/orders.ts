@@ -71,7 +71,7 @@ function formatCantidadTotal(n: number): string {
 }
 
 /** Suma ud/kg de las líneas cuyo producto coincide con la búsqueda. */
-export function textoTotalBusqueda(encargos: EncargoItem[], busqueda: string): string | null {
+export function totalesBusquedaProducto(encargos: EncargoItem[], busqueda: string) {
   const q = normalizarTexto(busqueda);
   if (!q) return null;
   let ud = 0;
@@ -87,12 +87,7 @@ export function textoTotalBusqueda(encargos: EncargoItem[], busqueda: string): s
     }
   }
   if (!hits) return null;
-  const nombre = busqueda.trim();
-  const udTxt = formatCantidadTotal(ud);
-  const kgTxt = formatCantidadTotal(kg);
-  if (ud > 0 && kg > 0) return `${udTxt} ${nombre} y ${kgTxt} kg en total`;
-  if (kg > 0) return `${kgTxt} kg de ${nombre} en total`;
-  return `${udTxt} ${nombre} en total`;
+  return { ud, kg, udTxt: formatCantidadTotal(ud), kgTxt: formatCantidadTotal(kg), nombre: busqueda.trim() };
 }
 
 export function getOrderBadgeStyle(estado: EncargoEstado): string {

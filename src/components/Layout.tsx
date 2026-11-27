@@ -1,4 +1,5 @@
 import { type ReactNode, useState } from "react";
+import { LanguageToggle, useLang } from "../i18n/LangStore";
 import { formatHeaderDate } from "../lib/dates";
 import { useAppStore } from "../store/AppStore";
 import { useAuth } from "../store/AuthStore";
@@ -9,6 +10,7 @@ import { Toast } from "./Toast";
 export function Layout({ children }: { children: ReactNode }) {
   const { view, navigateTo, worker } = useAppStore();
   const { logout } = useAuth();
+  const { t, lang } = useLang();
   const [pinOpen, setPinOpen] = useState(false);
 
   return (
@@ -26,7 +28,7 @@ export function Layout({ children }: { children: ReactNode }) {
               <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
               </svg>
-              <span>Inicio</span>
+              <span>{t("nav.home")}</span>
             </button>
             <button type="button" onClick={() => navigateTo("home")} className="flex min-w-0 items-center gap-2 text-left">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand text-base font-extrabold text-white sm:h-11 sm:w-11 sm:rounded-2xl sm:text-lg">
@@ -34,24 +36,27 @@ export function Layout({ children }: { children: ReactNode }) {
               </div>
               <div className="min-w-0">
                 <h1 className="truncate text-base font-extrabold text-slate-900 sm:text-xl">Carns Arrom</h1>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-brand sm:text-xs">Gestión Interna</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-brand sm:text-xs">{t("nav.internal")}</p>
               </div>
             </button>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-1">
-            <span className="rounded-lg border border-slate-200 bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-700 sm:text-sm">
-              {formatHeaderDate()}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <LanguageToggle compact />
+              <span className="rounded-lg border border-slate-200 bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-700 sm:text-sm">
+                {formatHeaderDate(undefined, lang)}
+              </span>
+            </div>
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-extrabold text-brand sm:text-xs">
                 {worker.nombre}
-                {worker.esAdmin ? " · Admin" : ""}
+                {worker.esAdmin ? ` · ${t("common.admin")}` : ""}
               </span>
               <button type="button" onClick={() => setPinOpen(true)} className="rounded-lg bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-700">
-                PIN
+                {t("nav.pin")}
               </button>
               <button type="button" onClick={logout} className="rounded-lg bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-700">
-                Salir
+                {t("nav.logout")}
               </button>
             </div>
           </div>
@@ -60,7 +65,7 @@ export function Layout({ children }: { children: ReactNode }) {
         <main className="flex w-full flex-1 flex-col p-3 sm:p-5 md:p-6 lg:p-8">{children}</main>
         <footer className="mt-auto border-t border-slate-200 bg-white px-3 py-3 text-center sm:px-6 sm:py-4">
           <p className="text-[10px] font-medium text-slate-400 sm:text-xs">
-            Carns Arrom — Gestión Interna
+            {t("footer.line")}
             <span className="block font-semibold text-slate-600 sm:inline"> · Jesús, Jordi, Jony, Joel, Mónica, Chema y Sonia</span>
           </p>
         </footer>

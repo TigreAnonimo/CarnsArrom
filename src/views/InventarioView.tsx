@@ -1,5 +1,6 @@
 import { type FormEvent, useMemo, useState } from "react";
 import { PRODUCT_CHIPS } from "../data/constants";
+import { useLang } from "../i18n/LangStore";
 import { todayISO } from "../lib/dates";
 import { useAppStore } from "../store/AppStore";
 import type { ProductoStock } from "../types";
@@ -16,6 +17,7 @@ export function InventarioView() {
     showToast,
     openConfirm,
   } = useAppStore();
+  const { t } = useLang();
   const [tab, setTab] = useState<"nuevo" | "stock" | "agotados" | "historial">("stock");
   const [fecha, setFecha] = useState(todayISO());
   const [producto, setProducto] = useState("");
@@ -98,7 +100,7 @@ export function InventarioView() {
               }}
               className="rounded-xl bg-brand px-4 py-2 text-sm font-extrabold text-white"
             >
-              Guardar cambios
+              {t("inv.saveChanges")}
             </button>
           </div>
         ) : (
@@ -119,7 +121,7 @@ export function InventarioView() {
                 }}
                 className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-extrabold"
               >
-                Modificar
+                {t("common.modify")}
               </button>
               {agotado ? (
                 <button
@@ -127,7 +129,7 @@ export function InventarioView() {
                   onClick={() => void reactivateProducto(item.id).then(() => showToast("Reactivado", item.nombre))}
                   className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-extrabold text-emerald-800"
                 >
-                  Reactivar
+                  {t("inv.reactivate")}
                 </button>
               ) : (
                 <button
@@ -181,7 +183,7 @@ export function InventarioView() {
       <div className="flex items-center gap-3">
         <span className="text-3xl">📦</span>
         <div>
-          <h2 className="text-2xl font-extrabold text-slate-900">Inventario</h2>
+          <h2 className="text-2xl font-extrabold text-slate-900">{t("inv.title")}</h2>
           <p className="text-sm text-slate-600">Stock actual e historial de conteos</p>
         </div>
       </div>
@@ -189,10 +191,10 @@ export function InventarioView() {
       <div className="grid grid-cols-2 gap-2 rounded-2xl bg-slate-200/80 p-1.5 sm:grid-cols-4">
         {(
           [
-            ["stock", `Stock (${activos.length})`],
-            ["nuevo", "Nuevo conteo"],
-            ["agotados", `Agotados (${agotados.length})`],
-            ["historial", "Historial"],
+            ["stock", `${t("inv.tabStock")} (${activos.length})`],
+            ["nuevo", t("inv.tabNew")],
+            ["agotados", `${t("inv.tabOut")} (${agotados.length})`],
+            ["historial", t("inv.tabHist")],
           ] as const
         ).map(([id, label]) => (
           <button

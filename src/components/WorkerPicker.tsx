@@ -1,4 +1,5 @@
 import { WORKERS } from "../data/constants";
+import { useLang } from "../i18n/LangStore";
 import type { WorkerTheme } from "../types";
 
 interface WorkerPickerProps {
@@ -9,6 +10,7 @@ interface WorkerPickerProps {
 }
 
 export function WorkerPicker({ value, onChange, theme = "brand", inputId }: WorkerPickerProps) {
+  const { t } = useLang();
   const selectedClass =
     theme === "sky"
       ? "bg-sky-700 text-white font-extrabold border-sky-700 shadow-sm"
@@ -26,7 +28,7 @@ export function WorkerPicker({ value, onChange, theme = "brand", inputId }: Work
         required
         readOnly
         value={value}
-        placeholder="Toca tu nombre abajo"
+        placeholder={t("worker.placeholder")}
         className={`mb-2.5 w-full cursor-pointer rounded-xl border-2 px-4 py-3 text-lg font-extrabold ${inputClass}`}
       />
       <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">

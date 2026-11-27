@@ -1,4 +1,7 @@
+import type { Lang } from "../i18n/messages";
+
 const WEEKDAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"] as const;
+const WEEKDAYS_CA = ["Dg", "Dl", "Dt", "Dc", "Dj", "Dv", "Ds"] as const;
 const WEEKDAYS_LONG = [
   "Domingo",
   "Lunes",
@@ -65,8 +68,12 @@ export function formatDateES(isoDate: string): string {
   return `${parts[2]}/${parts[1]}/${parts[0]}`;
 }
 
-export function formatHeaderDate(date = new Date()): string {
-  return `${WEEKDAYS[date.getDay()]}, ${date.getDate()} ${MONTHS_SHORT[date.getMonth()]} ${date.getFullYear()}`;
+const MONTHS_SHORT_CA = ["gen", "feb", "març", "abr", "maig", "juny", "jul", "ago", "set", "oct", "nov", "des"] as const;
+
+export function formatHeaderDate(date = new Date(), lang: Lang = "es"): string {
+  const days = lang === "ca" ? WEEKDAYS_CA : WEEKDAYS;
+  const months = lang === "ca" ? MONTHS_SHORT_CA : MONTHS_SHORT;
+  return `${days[date.getDay()]}, ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
 }
 
 export function formatDayLabel(isoDate: string, today = todayISO()): string {

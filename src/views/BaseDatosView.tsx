@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { NEVERA_NOMBRES, TEMP_ALERT } from "../data/constants";
+import { useLang } from "../i18n/LangStore";
 import {
   actividadRows,
   encargosRows,
@@ -18,7 +19,7 @@ import type { BackupPayload, DbEncFilter, DbTab } from "../types";
 export function BaseDatosView() {
   const { data, worker, exportBackup, restoreBackup, createWorker, setWorkerPin, setWorkerAdmin, showToast } =
     useAppStore();
-  if (!worker.esAdmin) return null;
+  const { t } = useLang();
   const { workers } = useAuth();
   const [tab, setTab] = useState<DbTab>("equipo");
   const [month, setMonth] = useState("all");
@@ -150,6 +151,8 @@ export function BaseDatosView() {
     reader.readAsText(file);
   }
 
+  if (!worker.esAdmin) return null;
+
   return (
     <section className="fade-in space-y-5">
       <div className="flex items-center gap-3">
@@ -163,11 +166,11 @@ export function BaseDatosView() {
       <div className="grid grid-cols-2 gap-1.5 rounded-2xl bg-slate-200/80 p-1.5 sm:grid-cols-5">
         {(
           [
-            ["equipo", "👥 Equipo"],
-            ["neveras", "❄️ Neveras"],
-            ["inventario", "📦 Inventario"],
-            ["encargos", "📝 Encargos"],
-            ["actividad", "📋 Actividad"],
+            ["equipo", `👥 ${t("db.equipo")}`],
+            ["neveras", `❄️ ${t("db.neveras")}`],
+            ["inventario", `📦 ${t("db.inventario")}`],
+            ["encargos", `📝 ${t("db.encargos")}`],
+            ["actividad", `📋 ${t("db.actividad")}`],
           ] as const
         ).map(([id, label]) => (
           <button

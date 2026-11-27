@@ -1,4 +1,5 @@
 import { Layout } from "./components/Layout";
+import { useLang } from "./i18n/LangStore";
 import { isSupabaseConfigured } from "./lib/supabase";
 import { AppStoreProvider, useAppStore } from "./store/AppStore";
 import { useAuth } from "./store/AuthStore";
@@ -26,12 +27,13 @@ function Shell() {
 
 export default function App() {
   const { session, loading } = useAuth();
+  const { t } = useLang();
 
   if (!isSupabaseConfigured) return <SetupView />;
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#E9EEF4] text-sm font-bold text-slate-600">
-        Cargando Carns Arrom…
+        {t("common.loading")}
       </div>
     );
   }

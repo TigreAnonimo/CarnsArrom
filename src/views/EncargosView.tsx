@@ -8,10 +8,11 @@ import {
   parseEncargoLineas,
   serializeEncargoLineas,
   siguienteNumeroEncargo,
-  textoTotalBusqueda,
+  totalesBusquedaProducto,
   type EncargoLinea,
   type EncargoUnidad,
 } from "../lib/orders";
+import { useLang } from "../i18n/LangStore";
 import { useAppStore } from "../store/AppStore";
 import type { EncargoEstado, EncargoItem } from "../types";
 
@@ -31,9 +32,9 @@ function soloDigitos(texto: string) {
   return texto.replace(/\D/g, "");
 }
 
-function faltaClienteOTelefono(cliente: string, telefono: string): string | null {
-  if (!cliente.trim()) return "Pon el nombre de la persona.";
-  if (soloDigitos(telefono).length < 9) return "Pon un teléfono (mínimo 9 cifras).";
+function faltaClienteOTelefono(cliente: string, telefono: string, t: (k: string) => string): string | null {
+  if (!cliente.trim()) return t("enc.needClient");
+  if (soloDigitos(telefono).length < 9) return t("enc.needPhone");
   return null;
 }
 
@@ -44,10 +45,11 @@ function FiltroFechaEncargos({
   value: string;
   onChange: (iso: string) => void;
 }) {
+  const { t } = useLang();
   return (
     <div className="flex w-full flex-wrap items-end gap-2 sm:w-auto">
       <label className="relative min-w-[11rem] flex-1">
-        <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-slate-500">Fecha (dd/mm/aa)</span>
+        <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-slate-500">{t("enc.dateLabel")}</span>
         <input
           type="date"
           lang="es-ES"
@@ -64,7 +66,7 @@ function FiltroFechaEncargos({
         onClick={() => onChange("")}
         className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-extrabold text-slate-700"
       >
-        Restablecer
+        {t("enc.reset")}
       </button>
     </div>
   );
@@ -94,6 +96,7 @@ function LineasEncargoEditor({
   onChange: (lineas: EncargoLinea[]) => void;
   compact?: boolean;
 }) {
+  const { t } = useLang();
   function patch(i: number, campo: keyof EncargoLinea, valor: string) {
     onChange(lineas.map((l, idx) => (idx === i ? { ...l, [campo]: valor } : l)));
   }
@@ -103,14 +106,14 @@ function LineasEncargoEditor({
   const pad = compact ? "py-2" : "py-3";
   return (
     <div className="space-y-2">
-      <p className={`block font-bold ${compact ? "text-sm" : "text-base"}`}>Qué pide (una cosa por línea)</p>
+      <p className={`block font-bold ${compact ? "text-sm" : "text-base"}`}>{t("enc.lines")}</p>
       {lineas.map((l, i) => (
         <div key={i} className="space-y-2 rounded-xl border-2 border-slate-200 p-2">
           <input
             required={i === 0}
             value={l.producto}
             onChange={(e) => patch(i, "producto", e.target.value)}
-            placeholder={`Producto ${i + 1}`}
+            placeholder={t("enc.product", { n: i + 1 })}
             className={`w-full rounded-xl border-2 px-3 ${pad}`}
           />
           <div className="flex gap-2">
@@ -119,7 +122,7 @@ function LineasEncargoEditor({
               value={l.cantidad}
               onChange={(e) => patch(i, "cantidad", e.target.value)}
               inputMode="decimal"
-              placeholder="Cant."
+              placeholder={t("enc.qty")}
               className={`w-20 shrink-0 rounded-xl border-2 px-3 font-extrabold ${pad} sm:w-24`}
             />
             <button
@@ -127,14 +130,14 @@ function LineasEncargoEditor({
               onClick={() => setUnidad(i, "ud")}
               className={`flex-1 rounded-xl border-2 text-xs font-extrabold ${l.unidad === "ud" ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200"}`}
             >
-              Ud
+              {t("enc.ud")}
             </button>
             <button
               type="button"
               onClick={() => setUnidad(i, "kg")}
               className={`flex-1 rounded-xl border-2 text-xs font-extrabold ${l.unidad === "kg" ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200"}`}
             >
-              Kg
+              {t("enc.kg")}
             </button>
             {lineas.length > 1 ? (
               <button
@@ -154,7 +157,7 @@ function LineasEncargoEditor({
         onClick={() => onChange([...lineas, { producto: "", cantidad: "", unidad: "ud" }])}
         className="w-full rounded-xl border-2 border-dashed border-brand/40 py-2 text-sm font-extrabold text-brand"
       >
-        + Añadir otra cosa
+        {t("enc.addLine")}
       </button>
     </div>
   );
@@ -171,6 +174,7 @@ export function EncargosView() {
     showToast,
     openConfirm,
   } = useAppStore();
+  const { t } = useLang();
   const [tab, setTab] = useState<"activos" | "entregados" | "nuevo">("activos");
   const [busqueda, setBusqueda] = useState("");
   const [busquedaTel, setBusquedaTel] = useState("");
@@ -217,21 +221,24 @@ export function EncargosView() {
   );
   const nActivos = data.encargos.filter((o) => o.estado !== "Entregado").length;
   const nEntregados = data.encargos.filter((o) => o.estado === "Entregado").length;
-  const totalBusqueda = useMemo(
-    () => textoTotalBusqueda(tab === "entregados" ? entregados : activos, busqueda),
-    [tab, activos, entregados, busqueda],
-  );
+  const totalBusqueda = useMemo(() => {
+    const tot = totalesBusquedaProducto(tab === "entregados" ? entregados : activos, busqueda);
+    if (!tot) return null;
+    if (tot.ud > 0 && tot.kg > 0) return t("enc.totalBoth", { ud: tot.udTxt, kg: tot.kgTxt, name: tot.nombre });
+    if (tot.kg > 0) return t("enc.totalKg", { kg: tot.kgTxt, name: tot.nombre });
+    return t("enc.totalUd", { ud: tot.udTxt, name: tot.nombre });
+  }, [tab, activos, entregados, busqueda, t]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const packed = serializeEncargoLineas(lineas);
-    const faltaContacto = faltaClienteOTelefono(cliente, telefono);
+    const faltaContacto = faltaClienteOTelefono(cliente, telefono, t);
     if (faltaContacto) {
-      showToast("Faltan datos del cliente", faltaContacto, "bg-red-600");
+      showToast(t("enc.missingClient"), faltaContacto, "bg-red-600");
       return;
     }
     if (!packed.producto.trim()) {
-      showToast("Falta el producto", "Añade al menos una cosa.", "bg-red-600");
+      showToast(t("enc.missingProduct"), t("enc.needProduct"), "bg-red-600");
       return;
     }
     try {
@@ -249,10 +256,10 @@ export function EncargosView() {
       setTelefono("");
       setPersona(worker.nombre);
       setObs("");
-      showToast("Encargo guardado", `Apuntado por ${worker.nombre}.`);
+      showToast(t("enc.saved"), t("enc.savedBy", { name: worker.nombre }));
       setTab("activos");
     } catch (err) {
-      showToast("No se pudo guardar", err instanceof Error ? err.message : "Error", "bg-red-600");
+      showToast(t("enc.failSave"), err instanceof Error ? err.message : "Error", "bg-red-600");
     }
   }
 
@@ -261,20 +268,20 @@ export function EncargosView() {
       await changeOrderStatus(order.id, st);
       if (st === "Entregado") {
         setTab("entregados");
-        showToast("Encargo entregado", `${order.numero} queda en Entregados.`);
+        showToast(t("enc.done"), t("enc.doneDesc", { num: order.numero }));
       }
     } catch (err) {
-      showToast("No se pudo cambiar el estado", err instanceof Error ? err.message : "Error", "bg-red-600");
+      showToast(t("enc.failStatus"), err instanceof Error ? err.message : "Error", "bg-red-600");
     }
   }
 
   function confirmDelete(order: EncargoItem) {
     openConfirm({
-      title: "¿Eliminar encargo?",
-      text: `Se borrará ${order.numero} (${order.producto}).`,
-      yesLabel: "Sí, eliminar",
+      title: t("enc.delTitle"),
+      text: t("enc.delText", { num: order.numero, product: order.producto }),
+      yesLabel: t("enc.delYes"),
       onConfirm: () => {
-        void deleteEncargo(order.id).then(() => showToast("Encargo eliminado", order.numero, "bg-red-600"));
+        void deleteEncargo(order.id).then(() => showToast(t("enc.deleted"), order.numero, "bg-red-600"));
       },
     });
   }
@@ -284,20 +291,20 @@ export function EncargosView() {
       <div className="flex items-center gap-3">
         <span className="text-3xl">📝</span>
         <div>
-          <h2 className="text-2xl font-extrabold text-slate-900">Encargos</h2>
-          <p className="text-sm text-slate-600">Hoy primero. Números por día de recogida (#1, #2… cada día).</p>
+          <h2 className="text-2xl font-extrabold text-slate-900">{t("enc.title")}</h2>
+          <p className="text-sm text-slate-600">{t("enc.subtitle")}</p>
         </div>
       </div>
 
       <div className="grid grid-cols-3 gap-1.5 rounded-2xl bg-slate-200/80 p-1.5">
         <button type="button" onClick={() => setTab("activos")} className={`rounded-xl py-3 text-xs font-extrabold sm:text-sm ${tab === "activos" ? "bg-white shadow-sm" : "text-slate-600"}`}>
-          Activos ({nActivos})
+          {t("enc.active", { n: nActivos })}
         </button>
         <button type="button" onClick={() => setTab("entregados")} className={`rounded-xl py-3 text-xs font-extrabold sm:text-sm ${tab === "entregados" ? "bg-white text-emerald-800 shadow-sm" : "text-slate-600"}`}>
-          Entregados ({nEntregados})
+          {t("enc.delivered", { n: nEntregados })}
         </button>
         <button type="button" onClick={() => setTab("nuevo")} className={`rounded-xl py-3 text-xs font-extrabold sm:text-sm ${tab === "nuevo" ? "bg-brand text-white shadow-sm" : "text-brand"}`}>
-          + Nuevo
+          {t("enc.new")}
         </button>
       </div>
 
@@ -307,15 +314,15 @@ export function EncargosView() {
             value={busquedaTel}
             onChange={(e) => setBusquedaTel(e.target.value)}
             inputMode="tel"
-            placeholder="Buscar por teléfono del cliente…"
+            placeholder={t("enc.searchTel")}
             className="w-full rounded-xl border-2 border-slate-300 px-3 py-2 font-bold"
           />
-          <input value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Buscar nº, cliente, producto, trabajador…" className="w-full rounded-xl border-2 border-slate-300 px-3 py-2" />
+          <input value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder={t("enc.search")} className="w-full rounded-xl border-2 border-slate-300 px-3 py-2" />
           <div className="flex flex-wrap gap-2">
             {tab === "activos"
               ? (["Todos", "Pendiente", "Preparado"] as const).map((st) => (
                   <button key={st} type="button" onClick={() => setFiltroEstado(st)} className={`rounded-xl px-3 py-1.5 text-xs font-extrabold ${filtroEstado === st ? "bg-slate-900 text-white" : "bg-slate-100"}`}>
-                    {st}
+                    {st === "Todos" ? t("common.all") : t(`estado.${st}`)}
                   </button>
                 ))
               : null}
@@ -334,23 +341,23 @@ export function EncargosView() {
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="rounded-lg bg-brand-light px-2 py-0.5 text-sm font-extrabold text-brand">{order.numero}</span>
-                    <span className="text-sm font-bold">📅 {order.dia}{order.diaISO === todayISO() ? " · HOY" : ""}</span>
+                    <span className="text-sm font-bold">📅 {order.dia}{order.diaISO === todayISO() ? ` · ${t("enc.today")}` : ""}</span>
                   </div>
                   <EncargoLineasLista producto={order.producto} cantidad={order.cantidad} />
-                  {order.cliente ? <p className="text-sm font-bold text-slate-700">Cliente: {order.cliente}</p> : null}
+                  {order.cliente ? <p className="text-sm font-bold text-slate-700">{t("enc.client")}: {order.cliente}</p> : null}
                   {order.telefono ? (
                     <p className="text-sm font-bold text-slate-700">
-                      Tel:{" "}
+                      {t("enc.tel")}:{" "}
                       <a href={`tel:${soloDigitos(order.telefono)}`} className="underline">
                         {order.telefono}
                       </a>
                     </p>
                   ) : null}
                 </div>
-                <span className={`h-fit rounded-xl border px-3 py-1 text-xs font-extrabold ${getOrderBadgeStyle(order.estado)}`}>{order.estado}</span>
+                <span className={`h-fit rounded-xl border px-3 py-1 text-xs font-extrabold ${getOrderBadgeStyle(order.estado)}`}>{t(`estado.${order.estado}`)}</span>
               </div>
-              {order.obs ? <p className="rounded-xl bg-slate-50 p-2 text-sm">Obs: {order.obs}</p> : null}
-              <p className="text-xs text-slate-500">Apuntado por {order.persona}</p>
+              {order.obs ? <p className="rounded-xl bg-slate-50 p-2 text-sm">{t("enc.obs")}: {order.obs}</p> : null}
+              <p className="text-xs text-slate-500">{t("enc.by", { name: order.persona })}</p>
               {edit?.id === order.id ? (
                 <EditForm
                   order={order}
@@ -359,7 +366,7 @@ export function EncargosView() {
                     void updateEncargo(order.id, patch).then(() => {
                       setEdit(null);
                       if (patch.estado === "Entregado") setTab("entregados");
-                      showToast("Encargo actualizado", order.numero);
+                      showToast(t("enc.updated"), order.numero);
                     })
                   }
                 />
@@ -372,17 +379,17 @@ export function EncargosView() {
                       onClick={() => void marcarEstado(order, st)}
                       className={`rounded-xl border-2 py-3 text-xs font-extrabold ${order.estado === st ? "bg-slate-900 text-white border-slate-900" : "border-slate-200"}`}
                     >
-                      {st === "Entregado" ? "✓ Entregado" : st}
+                      {st === "Entregado" ? t("enc.deliveredBtn") : t(`estado.${st}`)}
                     </button>
                   ))}
                 </div>
               )}
               <div className="flex gap-2">
                 <button type="button" onClick={() => setEdit(order)} className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-extrabold">
-                  Modificar
+                  {t("common.modify")}
                 </button>
                 <button type="button" onClick={() => confirmDelete(order)} className="rounded-xl bg-red-50 px-3 py-2 text-xs font-extrabold text-red-700">
-                  Eliminar
+                  {t("common.delete")}
                 </button>
               </div>
             </article>
@@ -390,7 +397,7 @@ export function EncargosView() {
         : null}
 
       {tab === "activos" && activos.length === 0 ? (
-        <p className="rounded-2xl border border-dashed bg-white p-6 text-center text-sm text-slate-500">No hay encargos activos con estos filtros.</p>
+        <p className="rounded-2xl border border-dashed bg-white p-6 text-center text-sm text-slate-500">{t("enc.noActive")}</p>
       ) : null}
 
       {tab === "entregados"
@@ -403,25 +410,25 @@ export function EncargosView() {
                     <span className="text-sm font-bold">📅 {order.dia}</span>
                   </div>
                   <EncargoLineasLista producto={order.producto} cantidad={order.cantidad} />
-                  {order.cliente ? <p className="text-sm font-bold text-slate-700">Cliente: {order.cliente}</p> : null}
+                  {order.cliente ? <p className="text-sm font-bold text-slate-700">{t("enc.client")}: {order.cliente}</p> : null}
                   {order.telefono ? (
                     <p className="text-sm font-bold text-slate-700">
-                      Tel:{" "}
+                      {t("enc.tel")}:{" "}
                       <a href={`tel:${soloDigitos(order.telefono)}`} className="underline">
                         {order.telefono}
                       </a>
                     </p>
                   ) : null}
                 </div>
-                <span className={`h-fit rounded-xl border px-3 py-1 text-xs font-extrabold ${getOrderBadgeStyle("Entregado")}`}>Entregado</span>
+                <span className={`h-fit rounded-xl border px-3 py-1 text-xs font-extrabold ${getOrderBadgeStyle("Entregado")}`}>{t("estado.Entregado")}</span>
               </div>
-              <p className="text-xs text-slate-500">Apuntado por {order.persona}</p>
+              <p className="text-xs text-slate-500">{t("enc.by", { name: order.persona })}</p>
               <div className="mt-2 flex gap-2">
                 <button type="button" onClick={() => void marcarEstado(order, "Pendiente")} className="rounded-xl bg-amber-50 px-3 py-2 text-xs font-bold">
-                  Devolver a activos
+                  {t("enc.backActive")}
                 </button>
                 <button type="button" onClick={() => confirmDelete(order)} className="rounded-xl bg-red-50 px-3 py-2 text-xs font-extrabold text-red-700">
-                  Eliminar
+                  {t("common.delete")}
                 </button>
               </div>
             </article>
@@ -430,25 +437,23 @@ export function EncargosView() {
 
       {tab === "entregados" && entregados.length === 0 ? (
         <p className="rounded-2xl border border-dashed bg-white p-6 text-center text-sm text-slate-500">
-          {nEntregados === 0 ? "Aún no hay encargos entregados. Al pulsar Entregado, el pedido queda aquí." : "Ningún entregado coincide con la búsqueda o la fecha."}
+          {nEntregados === 0 ? t("enc.noDelivered") : t("enc.noDeliveredFilter")}
         </p>
       ) : null}
 
       {tab === "nuevo" ? (
         <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4 rounded-2xl border bg-white p-5">
           <div className="rounded-2xl border-2 border-brand-border bg-brand-light px-4 py-3">
-            <p className="text-xs font-bold uppercase tracking-wider text-brand">Número de ese día</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-brand">{t("enc.numDay")}</p>
             <p className="text-3xl font-extrabold text-brand">{formatEncargoNumero(siguienteNumero)}</p>
-            <p className="text-xs text-slate-600">
-              Recogida {formatDateES(dia)}: #1, #2, #3… Si borras uno, ese número se vuelve a usar. Otro día empieza otra vez en #1.
-            </p>
+            <p className="text-xs text-slate-600">{t("enc.numHint", { date: formatDateES(dia) })}</p>
           </div>
           <div>
-            <label className="mb-1.5 block text-base font-bold">Nombre de la persona (cliente) *</label>
-            <input required value={cliente} onChange={(e) => setCliente(e.target.value)} placeholder="Ej: Sra. Rosa" className="w-full rounded-xl border-2 px-4 py-3 text-lg font-bold" />
+            <label className="mb-1.5 block text-base font-bold">{t("enc.clientName")}</label>
+            <input required value={cliente} onChange={(e) => setCliente(e.target.value)} placeholder={t("enc.clientPh")} className="w-full rounded-xl border-2 px-4 py-3 text-lg font-bold" />
           </div>
           <div>
-            <label className="mb-1.5 block text-base font-bold">Teléfono del cliente *</label>
+            <label className="mb-1.5 block text-base font-bold">{t("enc.phone")}</label>
             <input
               required
               value={telefono}
@@ -456,27 +461,27 @@ export function EncargosView() {
               type="tel"
               inputMode="tel"
               minLength={9}
-              placeholder="Ej: 612 345 678"
+              placeholder={t("enc.phonePh")}
               className="w-full rounded-xl border-2 px-4 py-3 text-lg font-bold"
             />
           </div>
           <LineasEncargoEditor lineas={lineas} onChange={setLineas} />
           <input type="date" required value={dia} onChange={(e) => setDia(e.target.value)} className="w-full rounded-xl border-2 px-4 py-3" />
           <div>
-            <label className="mb-1.5 block text-base font-bold">Quién apunta el encargo</label>
+            <label className="mb-1.5 block text-base font-bold">{t("enc.who")}</label>
             <WorkerPicker inputId="enc-persona" value={persona} onChange={setPersona} />
           </div>
-          <input value={obs} onChange={(e) => setObs(e.target.value)} placeholder="Observaciones" className="w-full rounded-xl border-2 px-4 py-3" />
+          <input value={obs} onChange={(e) => setObs(e.target.value)} placeholder={t("enc.notes")} className="w-full rounded-xl border-2 px-4 py-3" />
           <div className="grid grid-cols-2 gap-2">
             <button type="button" onClick={() => setEstado("Pendiente")} className={`rounded-xl border-2 py-3 font-extrabold ${estado === "Pendiente" ? "border-amber-600 bg-amber-50" : ""}`}>
-              Pendiente
+              {t("estado.Pendiente")}
             </button>
             <button type="button" onClick={() => setEstado("Preparado")} className={`rounded-xl border-2 py-3 font-extrabold ${estado === "Preparado" ? "border-sky-700 bg-sky-50" : ""}`}>
-              Preparado
+              {t("estado.Preparado")}
             </button>
           </div>
           <button type="submit" className="w-full rounded-2xl bg-brand py-4 text-xl font-extrabold text-white">
-            Guardar encargo
+            {t("enc.save")}
           </button>
         </form>
       ) : null}
@@ -510,25 +515,26 @@ function EditForm({
   const [obs, setObs] = useState(order.obs);
   const [estado, setEstado] = useState(order.estado);
   const [aviso, setAviso] = useState("");
+  const { t } = useLang();
   return (
     <div className="space-y-2 rounded-xl bg-slate-50 p-3">
-      <input required value={cliente} onChange={(e) => setCliente(e.target.value)} placeholder="Cliente *" className="w-full rounded-xl border px-3 py-2" />
-      <input required value={telefono} onChange={(e) => setTelefono(e.target.value)} type="tel" minLength={9} placeholder="Teléfono *" className="w-full rounded-xl border px-3 py-2" />
+      <input required value={cliente} onChange={(e) => setCliente(e.target.value)} placeholder={t("enc.clientStar")} className="w-full rounded-xl border px-3 py-2" />
+      <input required value={telefono} onChange={(e) => setTelefono(e.target.value)} type="tel" minLength={9} placeholder={t("enc.phoneStar")} className="w-full rounded-xl border px-3 py-2" />
       <LineasEncargoEditor compact lineas={lineas} onChange={setLineas} />
       <input type="date" value={diaISO} onChange={(e) => setDiaISO(e.target.value)} className="w-full rounded-xl border px-3 py-2" />
-      <input value={persona} onChange={(e) => setPersona(e.target.value)} placeholder="Quién lo apuntó" className="w-full rounded-xl border px-3 py-2" />
+      <input value={persona} onChange={(e) => setPersona(e.target.value)} placeholder={t("enc.whoWrote")} className="w-full rounded-xl border px-3 py-2" />
       <input value={obs} onChange={(e) => setObs(e.target.value)} className="w-full rounded-xl border px-3 py-2" />
       <select value={estado} onChange={(e) => setEstado(e.target.value as EncargoEstado)} className="w-full rounded-xl border px-3 py-2">
-        <option>Pendiente</option>
-        <option>Preparado</option>
-        <option>Entregado</option>
+        <option value="Pendiente">{t("estado.Pendiente")}</option>
+        <option value="Preparado">{t("estado.Preparado")}</option>
+        <option value="Entregado">{t("estado.Entregado")}</option>
       </select>
       <div className="flex gap-2">
         {aviso ? <p className="text-xs font-bold text-red-700">{aviso}</p> : null}
         <button
           type="button"
           onClick={() => {
-            const falta = faltaClienteOTelefono(cliente, telefono);
+            const falta = faltaClienteOTelefono(cliente, telefono, t);
             if (falta) {
               setAviso(falta);
               return;
@@ -545,10 +551,10 @@ function EditForm({
           }}
           className="rounded-xl bg-brand px-3 py-2 text-xs font-extrabold text-white"
         >
-          Guardar
+          {t("common.save")}
         </button>
         <button type="button" onClick={onCancel} className="rounded-xl bg-white px-3 py-2 text-xs font-bold">
-          Cancelar
+          {t("common.cancel")}
         </button>
       </div>
     </div>
